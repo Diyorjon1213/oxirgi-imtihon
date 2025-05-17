@@ -36,7 +36,7 @@ export class AuthService {
     });
     const token = await this.generateTokens(userdata.id, userdata.role);
 
-    res.cookie('auth_token', token, {
+    res.cookie('access_token', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
@@ -69,11 +69,11 @@ export class AuthService {
     }
     const token = await this.generateTokens(user.id, user.role);
 
-    res.cookie('auth_token', token, {
+    res.cookie('access_token', token, {
       httpOnly: true,
       secure: false,
       sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 2 * 24 * 60 * 60 * 1000,
     });
 
     return {
@@ -95,7 +95,7 @@ export class AuthService {
   }
 
   async generateTokens(userId: string, role: any) {
-    const payload = { sub: userId, role };
+    const payload = { userId, role };
 
     const access_token = await this.jwtService.signAsync(payload, {
       secret: 'sasasas',

@@ -12,6 +12,8 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { AdminModule } from './admin/admin.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CreateadminModule } from './createadmin/createadmin.module';
+import { CreateadminService } from './createadmin/createadmin.service';
 
 @Module({
   imports: [
@@ -33,8 +35,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
+    CreateadminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(private readonly adminService: CreateadminService) {}
+
+  async onModuleInit() {
+    await this.adminService.createSuperAdmin();
+  }
+}

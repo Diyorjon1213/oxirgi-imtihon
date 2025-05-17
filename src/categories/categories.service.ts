@@ -1,26 +1,52 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-
+import slugify from 'slugify';
+import { PrismaService } from 'nestjs-prisma';
 @Injectable()
 export class CategoriesService {
-  create(createCategoryDto: CreateCategoryDto) {
-    return 'This action adds a new category';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createCategoryDto: CreateCategoryDto) {
+    const { name, description } = createCategoryDto;
+    const slug = slugify(name, { lower: true });
+
+    const category = await this.prisma.category.create({
+      data: {
+        name,
+        slug,
+        description,
+      },
+    });
+
+    console.log(category);
+
+    return {
+      success: true,
+      message: 'Kategoriya yaratildi',
+      data: {
+        ...category,
+      },
+    };
   }
 
-  findAll() {
-    return `This action returns all categories`;
+  async findAll() {
+    const categories = await this.prisma.category.findMany();
+
+    return {
+      success: true,
+      data: {
+        categories,
+      },
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
-  }
-
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} category`;
+  async remove(id: string) {
+    await this.prisma.category.delete({
+      where: { id },
+    });
+    return {
+      success: true,
+      message: 'Kategoriya ochirildi',
+    };
   }
 }

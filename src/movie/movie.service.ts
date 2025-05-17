@@ -1,26 +1,81 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMovieDto } from './dto/create-movie.dto';
-import { UpdateMovieDto } from './dto/update-movie.dto';
+import { PrismaService } from 'nestjs-prisma';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MovieService {
-  create(createMovieDto: CreateMovieDto) {
-    return 'This action adds a new movie';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getMovies(query: {
+    page: number;
+    limit: number;
+    category?: string;
+    search?: string;
+    subscriptionType?: 'free' | 'premium';
+  }) {
+    const { page, limit, category, search, subscriptionType } = query;
+
+    const where = {
+      ...(category && {
+        movieCategories: {
+          some: {
+            category: {
+              name: {
+                equals: category,
+                mode: 'insensitive' as const,
+              },
+            },
+          },
+        },
+      }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { description: { contains: search, mode: 'insensitive' as const } },
+        ],
+      }),
+      ...(subscriptionType && {
+        subscriptionType: subscriptionType,
+      }),
+    };
+
+    const movies = await this.prisma.movie.findMany({
+      where,
+      skip: 0,
+      take: limit,
+      include: {
+        movieCategories: {
+          include: {
+            category: true,
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: { movies },
+      page,
+      limit,
+      total: await this.prisma.movie.count({
+        where,
+      }),
+    };
   }
 
-  findAll() {
-    return `This action returns all movie`;
-  }
+  async getMovieBySlug(slug: string) {
+    const movie = await this.prisma.movie.findUnique({
+      where: {
+        slug,
+      },
+      include: {
+        movieCategories: true,
+      },
+    });
 
-  findOne(id: number) {
-    return `This action returns a #${id} movie`;
-  }
-
-  update(id: number, updateMovieDto: UpdateMovieDto) {
-    return `This action updates a #${id} movie`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} movie`;
+    return {
+      success: true,
+      data: movie,
+    };
   }
 }

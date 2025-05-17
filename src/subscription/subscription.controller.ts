@@ -1,18 +1,30 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
-import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { PurchaseSubscriptionDto } from './dto/purchaseSubscriptionDto';
+import { JwtAuthGuard } from 'src/common/guards/jwt.auth.guard';
+import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('subscription')
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 
-  @Post()
-  create(@Body() createSubscriptionDto: CreateSubscriptionDto) {
-    return this.subscriptionService.create(createSubscriptionDto);
+  @Post('plan')
+  @Roles('admin', 'superadmin')
+  @UseGuards(JwtAuthGuard)
+  createPlan(@Body() createPlan: CreateSubscriptionPlanDto, @Req() req: any) {
+    return this.subscriptionService.createPlan(createPlan);
   }
 
-  @Get()
-  findAll() {
-    return this.subscriptionService.findAll();
+  @Post('purchase')
+  @UseGuards(JwtAuthGuard)
+  purchaseSubscription(@Body() dto: PurchaseSubscriptionDto, @Req() req: any) {
+    const userId = req.user['userId'];
+    return this.subscriptionService.purchasePlan(userId, dto);
+  }
+
+  @Get('plans')
+  findPlans() {
+    return this.subscriptionService.getPlans();
   }
 }
